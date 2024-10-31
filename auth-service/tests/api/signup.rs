@@ -22,7 +22,7 @@ async fn should_return_422_if_malformed_input() {
         let response = app.post_signup(&test_case).await; // call `post_signup`
         assert_eq!(
             response.status().as_u16(),
-            200,
+            422,
             "Failed for input: {:?}",
             test_case
         );
