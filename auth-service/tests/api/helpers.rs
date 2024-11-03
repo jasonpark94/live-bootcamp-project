@@ -1,4 +1,7 @@
-use auth_service::Application;
+use std::sync::Arc;
+
+use auth_service::{app_state::AppState, Application};
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct TestApp {
@@ -8,7 +11,11 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let app = Application::build("127.0.0.1:0")
+        let user_store = auth_service::services::HashmapUserStore::default();
+        let app_state = AppState {
+            user_store: Arc::new(RwLock::new(user_store)),
+        };
+        let app = Application::build(app_state, "127.0.0.1:0")
             .await
             .expect("Failed to build app");
 
