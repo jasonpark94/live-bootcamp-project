@@ -70,10 +70,12 @@ pub struct ErrorResponse {
 impl IntoResponse for AuthAPIError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
-            AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"), // 
+            AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"), // 400
+            AuthAPIError::UnauthorizedCredentials => (StatusCode::UNAUTHORIZED, "Unauthorized request"), // 400
+            AuthAPIError::MisinformedCredentials => (StatusCode::UNPROCESSABLE_ENTITY, "Misinformed credentials"), // 422
             AuthAPIError::UnexpectedError => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
+                (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error") // 500
             }
         };
         let body = Json(ErrorResponse {
