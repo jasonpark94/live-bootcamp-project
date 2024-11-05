@@ -11,11 +11,11 @@ pub async fn signup(
     Json(request): Json<SignupRequest>,
     ) -> Result<impl IntoResponse, AuthAPIError> 
     {
-    let email = match Email::parse(&request.email) {
+    let email = match Email::parse(request.email) {
         Ok(email) => email,
         Err(_) => return Err(AuthAPIError::InvalidCredentials),
     };
-    let password = match Password::parse(&request.password) {
+    let password = match Password::parse(request.password) {
         Ok(password) => password,
         Err(_) => return Err(AuthAPIError::InvalidCredentials),
     };
@@ -28,7 +28,7 @@ pub async fn signup(
 
     let mut user_store = state.user_store.write().await;
 
-    if user_store.get_user(email).await.is_ok() {
+    if user_store.get_user(&email).await.is_ok() {
         return Err(AuthAPIError::UserAlreadyExists);
     }
 

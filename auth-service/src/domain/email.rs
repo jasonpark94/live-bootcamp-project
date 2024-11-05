@@ -2,9 +2,9 @@
 pub struct Email(String);
 
 impl Email {
-    pub fn parse(email: &str) -> Result<Self, &'static str> {
+    pub fn parse(email: String) -> Result<Self, &'static str> {
         if email.contains('@') && !email.is_empty() {
-            Ok(Self(email.to_string()))
+            Ok(Self(email))
         } else {
             Err("Invalid email address")
         }

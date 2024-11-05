@@ -10,11 +10,13 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tower_http::services::ServeDir;
 use routes::{login, logout, signup, verify_2fa, verify_token};
+use utils::constants::JWT_COOKIE_NAME;
 
 pub mod routes;
 pub mod services;
 pub mod domain;
 pub mod app_state;
+pub mod utils;
 
 use app_state::AppState;
 

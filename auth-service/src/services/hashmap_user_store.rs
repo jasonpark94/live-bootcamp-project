@@ -19,17 +19,17 @@ impl UserStore for HashmapUserStore {
         Ok(())
     }
 
-    async fn get_user(&self, email: Email) -> Result<User, UserStoreError> {
-        match self.users.get(&email.as_ref().to_string()) {
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
+        match self.users.get(email.as_ref()) {
             Some(user) => Ok(user.clone()),
             None => Err(UserStoreError::UserNotFound),
         }
     }
 
-    async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
         match self.users.get(&email.as_ref().to_string()) {
             Some(user) => {
-                if user.password == password {
+                if user.password.as_ref() == password.as_ref() {
                     Ok(())
                 } else {
                     Err(UserStoreError::InvalidCredentials)
@@ -50,8 +50,8 @@ mod tests {
     async fn test_add_user() {
         let mut store = HashmapUserStore::default();
         let user = User {
-            email: Email::parse("test@test.com").unwrap(), 
-            password: Password::parse("password").unwrap(),
+            email: Email::parse("test@test.com".to_string()).unwrap(), 
+            password: Password::parse("password".to_string()).unwrap(),
             requires_2fa: false,
         };
         assert_eq!(store.add_user(user).await, Ok(()));
@@ -61,14 +61,14 @@ mod tests {
     async fn test_get_user() {
 
         let user1 = User {
-            email: Email::parse("test1@test.com").unwrap(),
-            password: Password::parse("password").unwrap(),
+            email: Email::parse("test1@test.com".to_string()).unwrap(),
+            password: Password::parse("password".to_string()).unwrap(),
             requires_2fa: false,
         };
         
         let user2 = User {
-            email: Email::parse("test2@test.com").unwrap(),
-            password: Password::parse("password").unwrap(),
+            email: Email::parse("test2@test.com".to_string()).unwrap(),
+            password: Password::parse("password".to_string()).unwrap(),
             requires_2fa: false,
         };
 
@@ -77,7 +77,7 @@ mod tests {
         store.add_user(user1.clone()).await.unwrap();
         store.add_user(user2.clone()).await.unwrap();
 
-        assert_eq!(store.get_user(Email::parse("test1@test.com").unwrap()).await.unwrap(), user1);
+        assert_eq!(store.get_user(&Email::parse("test1@test.com".to_string()).unwrap()).await.unwrap(), user1);
     }
 
     #[tokio::test]
@@ -86,14 +86,14 @@ mod tests {
         let store = HashmapUserStore::default();
 
         let user1 = User {
-            email: Email::parse("test1@test.com").unwrap(),
-            password: Password::parse("password").unwrap(),
+            email: Email::parse("test1@test.com".to_string()).unwrap(),
+            password: Password::parse("password".to_string()).unwrap(),
             requires_2fa: false,
         };
         
         let mut store = HashmapUserStore::default();
         store.add_user(user1.clone()).await.unwrap();
 
-        assert_eq!(store.validate_user(user1.email, user1.password).await, Ok(()));
+        assert_eq!(store.validate_user(&user1.email, &user1.password).await, Ok(()));
     }
 }
