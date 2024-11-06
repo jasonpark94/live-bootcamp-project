@@ -33,7 +33,7 @@ pub async fn signup(
     }
 
     if user_store.add_user(user).await.is_err() {
-        return Err(AuthAPIError::UnexpectedError);
+        return Err(AuthAPIError::Unexpected);
     }
 
     let response = Json(SignupResponse {
