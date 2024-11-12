@@ -47,3 +47,32 @@ async fn should_return_401_if_invalid_token() {
     })).await;
     assert_eq!(response.status().as_u16(), 401);
 }
+
+#[tokio::test]
+async fn should_return_401_if_empty_token() {
+    let app = TestApp::new().await;
+
+    let email = get_random_email();
+
+    let signup_response = app.post_signup(&json!({
+        "email": email,
+        "password": "password",
+        "requires2FA": false
+    })).await;
+
+    let login_response = app.post_login(&json!({
+        "email": email,
+        "password": "password",
+    })).await;
+
+    let token = login_response.cookies().find(|c| c.name() == "jwt").unwrap().value().to_owned();
+
+    let logout_response = app.post_logout().await;
+
+
+    let verify_token_response = app.post_verify_token(&json!({
+        "token": &token
+    })).await;
+
+    assert_eq!(verify_token_response.status().as_u16(), 401);
+}

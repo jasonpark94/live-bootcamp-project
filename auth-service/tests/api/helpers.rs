@@ -17,8 +17,11 @@ pub struct TestApp {
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = auth_service::services::HashmapUserStore::default();
+        let banned_token_store = auth_service::services::HashsetBannedTokenStore::default();
+
         let app_state = AppState {
             user_store: Arc::new(RwLock::new(user_store)),
+            banned_token_store: Arc::new(RwLock::new(banned_token_store)),
         };
         let app = Application::build(app_state, "127.0.0.1:0")
             .await
