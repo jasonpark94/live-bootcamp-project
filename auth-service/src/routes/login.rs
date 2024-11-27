@@ -13,6 +13,9 @@ pub async fn login(
     jar: CookieJar, // New!
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+
+    let user_store = state.user_store.read().await;
+
     let email = match Email::parse(request.email) {
         Ok(email) => email,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
@@ -23,15 +26,24 @@ pub async fn login(
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
 
-    if let Err(_) = state.user_store.read().await.validate_user(&email, &password).await {
+    if let Err(_) = user_store.validate_user(&email, &password).await {
         return (jar, Err(AuthAPIError::UnauthorizedCredentials));
     }
 
-    let auth_cookie = generate_auth_cookie(&email).unwrap();
 
-    let updated_jar = jar.add(auth_cookie);
+    let user = match user_store.get_user(&email).await {
+        Ok(user) => user,
+        Err(_) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+    };
 
-    (updated_jar, Ok(StatusCode::OK.into_response()))
+    match user.requires_2fa {
+        true => handle_2fa(&user.email, jar).await,
+        false => handle_no_2fa(&user.email, jar).await,
+    }
+
+    // ---
+ //   let updated_jar = jar.add(auth_cookie);
+//    (updated_jar, Ok(StatusCode::OK.into_response()))
 }
 
 #[derive(Deserialize)]
@@ -41,6 +53,47 @@ pub struct LoginRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct LoginResponse {
+pub enum LoginResponse {
+    RegularAuth,
+    TwoFactorAuth(TwoFactorAuthResponse),
+}
+
+pub struct RegularAuth {
     pub message: String,
+}
+
+// If a user requires 2FA, this JSON body should be returned!
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct TwoFactorAuthResponse {
+    pub message: String,
+    #[serde(rename = "loginAttemptId")]
+    pub login_attempt_id: String,
+}
+
+
+async fn handle_2fa(
+    email: &Email,
+    jar: CookieJar,
+) -> (
+    CookieJar,
+    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+) {
+    // let login_attempt_id = "123456";
+
+    let auth_cookie = generate_auth_cookie(&email).unwrap();
+    let updated_jar = jar.add(auth_cookie);
+    (updated_jar, Ok((StatusCode::PARTIAL_CONTENT, Json(LoginResponse::RegularAuth))))
+}
+
+async fn handle_no_2fa(
+    email: &Email,
+    jar: CookieJar,
+) -> (
+    CookieJar,
+    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+) {
+    let auth_cookie = generate_auth_cookie(&email).unwrap();
+    let updated_jar = jar.add(auth_cookie);
+    (updated_jar, Ok((StatusCode::OK, Json(LoginResponse::RegularAuth))))
+
 }

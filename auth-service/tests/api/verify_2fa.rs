@@ -1,9 +1,7 @@
-use crate::helpers::TestApp;
+use crate::helpers::{get_random_email, TestApp};
+// use auth_service::domain::LoginAttemptId;
 
 #[tokio::test]
-pub async fn check_verify_2fa() {
-    let app = TestApp::new().await;
-    let response = app.post_verify_2fa().await;
-
-    assert_eq!(response.status().as_u16(), 200);
+async fn should_return_422_if_malformed_input() {
+    todo!()
 }

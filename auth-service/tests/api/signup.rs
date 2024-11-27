@@ -1,6 +1,5 @@
 use crate::helpers::{get_random_email, TestApp};
 use auth_service::{routes::SignupResponse, ErrorResponse};
-use axum::http::response;   
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -8,7 +7,6 @@ async fn should_return_422_if_malformed_input() {
 
     let random_email = get_random_email(); // Call helper method to generate email 
 
-    // TODO: add more malformed input test cases
     let test_cases = [
         serde_json::json!({
             "password": "password123",
