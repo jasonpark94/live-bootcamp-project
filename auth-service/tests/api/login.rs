@@ -1,13 +1,11 @@
-use crate::helpers::{TestApp, get_random_email};
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use crate::helpers::{get_random_email, TestApp};
+use auth_service::{
+    domain::{Email, TwoFACodeStore},
+    routes::{LoginRequest, LoginResponse, TwoFactorAuthResponse},
+    utils::constants::JWT_COOKIE_NAME,
+    ErrorResponse,
+};
 use serde::Serialize;
-
-
-#[derive(Serialize)]
-struct LoginRequest {
-    email: String,
-    password: String,
-}
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials_() {
@@ -148,6 +146,44 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 }
 
 #[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled1() {
+    let app = TestApp::new().await;
+
+    let random_email = get_random_email();
+
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": true
+    });
+
+    let response = app.post_signup(&signup_body).await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    let email = Email::parse(random_email.clone()).unwrap();
+
+    
+
+    let login_request = LoginRequest {
+        email: random_email,
+        password: "password123".to_string(),
+    };
+
+    let response = app.post_login(&login_request).await;
+
+    let (login_attempt_id , two_fa_code)= (app.two_fa_code_store.read().await.get_code(&email).await).unwrap();
+
+    assert_eq!(response.status().as_u16(), 206);
+
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+
+    assert_eq!(json_body.message, "2FA required".to_owned());
+}
+#[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let app = TestApp::new().await;
 
@@ -165,11 +201,28 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     let login_body = serde_json::json!({
         "email": random_email,
-        "password": "password123",
-        "2faCode": "123456"
+        "password": "password123"
     });
 
     let response = app.post_login(&login_body).await;
 
     assert_eq!(response.status().as_u16(), 206);
+
+    println!("{:?}", response);
+
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+
+    assert_eq!(json_body.message, "2FA required".to_owned());
+
+    let two_fa_code_store = app.two_fa_code_store.read().await;
+
+    let code_tuple = two_fa_code_store
+        .get_code(&Email::parse(random_email).unwrap())
+        .await
+        .expect("Failed to get 2FA code");
+
+    assert_eq!(code_tuple.0.as_ref(), json_body.login_attempt_id);
 }

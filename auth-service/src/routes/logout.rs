@@ -18,7 +18,9 @@ pub async fn logout(jar: CookieJar, State(state): State<AppState>) -> (CookieJar
         Err(_) => return (jar, Err(AuthAPIError::InvalidToken)),
     };
 
-    state.banned_token_store.write().await.add_banned_token(token.clone()).await;
+    if let Err(e) = state.banned_token_store.write().await.add_banned_token(token.clone()).await {
+        return (jar, Err(AuthAPIError::Unexpected));
+    }
 
     let jar = jar.remove(JWT_COOKIE_NAME);
     (jar, Ok(StatusCode::OK))

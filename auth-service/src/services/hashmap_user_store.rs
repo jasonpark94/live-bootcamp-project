@@ -72,7 +72,6 @@ mod tests {
             requires_2fa: false,
         };
 
-
         let mut store = HashmapUserStore::default();
         store.add_user(user1.clone()).await.unwrap();
         store.add_user(user2.clone()).await.unwrap();

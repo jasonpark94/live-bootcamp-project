@@ -11,7 +11,12 @@ async fn main() {
     let banned_token_store = auth_service::services::HashsetBannedTokenStore::default();
     let banned_token_store = std::sync::Arc::new(tokio::sync::RwLock::new(banned_token_store));
 
-    let app_state = auth_service::app_state::AppState { user_store, banned_token_store };
+    let two_fa_code_store = auth_service::services::HashmapTwoFACodeStore::default();
+    let two_fa_code_store = std::sync::Arc::new(tokio::sync::RwLock::new(two_fa_code_store));
+
+    let email_client = std::sync::Arc::new(auth_service::services::MockEmailClient);
+
+    let app_state = auth_service::app_state::AppState { user_store, banned_token_store, two_fa_code_store, email_client };
 
     let app = Application::build(app_state, prod::APP_ADDRESS)
         .await

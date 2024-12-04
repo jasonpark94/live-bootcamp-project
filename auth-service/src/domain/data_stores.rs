@@ -1,4 +1,5 @@
 use super::{Email, Password, User};
+use serde::Serialize;
 use uuid::Uuid;
 use rand::Rng;
 
@@ -62,7 +63,7 @@ impl AsRef<str> for LoginAttemptId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct TwoFACode(String);
 
 impl TwoFACode {
@@ -78,9 +79,7 @@ impl TwoFACode {
 
 impl Default for TwoFACode {
     fn default() -> Self {
-        let mut rng = rand::thread_rng();
-        let code: String = (0..4).map(|_| rng.gen_range(0..10).to_string()).collect();
-        Self::parse(code).unwrap()
+        Self(rand::thread_rng().gen_range(100_000..=999_999).to_string())
     }
 }
 
